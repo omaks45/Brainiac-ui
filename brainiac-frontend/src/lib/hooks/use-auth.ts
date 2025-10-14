@@ -8,7 +8,7 @@ import { LoginRequest, RegisterRequest } from '../types/auth.types';
 
 /**
  * Custom hook for authentication operations
- * Provides login, register, and logout functionality with proper state management
+ * Provides login, register, logout, and Google OAuth functionality
  */
 export const useAuth = () => {
     const router = useRouter();
@@ -38,6 +38,7 @@ export const useAuth = () => {
         }
         toast.error(errorMessage);
         },
+
     });
 
     /**
@@ -63,6 +64,7 @@ export const useAuth = () => {
         }
         toast.error(errorMessage);
         },
+
     });
 
     /**
@@ -90,13 +92,23 @@ export const useAuth = () => {
 
     /**
      * Google OAuth login
+     * Redirects to backend Google OAuth endpoint
      */
     const googleLogin = async () => {
         try {
+        console.log('Initiating Google OAuth...');
+        
+        // Get the Google OAuth URL from your backend
         const { url } = await authApi.googleLogin();
         
-        // Redirect to Google OAuth URL
-        window.location.href = url;
+        console.log('Google OAuth URL:', url);
+        
+        // Redirect to Google OAuth URL (provided by backend)
+        if (url) {
+            window.location.href = url;
+        } else {
+            throw new Error('No OAuth URL returned from backend');
+        }
         } catch (error: unknown) {
         let errorMessage = 'Google login failed';
         if (error && typeof error === 'object' && 'response' in error) {
@@ -105,6 +117,7 @@ export const useAuth = () => {
         }
         toast.error(errorMessage);
         }
+
     };
 
     /**

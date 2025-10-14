@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/lib/hooks/use-auth';
 
 /**
- * Registration form validation schema
+ * Registration form validation schema (without confirm password)
  */
 const signupSchema = z.object({
     email: z.string().email('Please enter a valid email address'),
@@ -31,19 +31,15 @@ const signupSchema = z.object({
         .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
         .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
         .regex(/[0-9]/, 'Password must contain at least one number'),
-    confirmPassword: z.string(),
-    }).refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ['confirmPassword'],
-    });
+});
 
-    type SignupFormData = z.infer<typeof signupSchema>;
+type SignupFormData = z.infer<typeof signupSchema>;
 
-    /**
-     * Signup Page Component
-     * Handles new user registration
-     */
-    export default function SignupPage() {
+/**
+ * Signup Page Component
+ * Handles new user registration
+ */
+export default function SignupPage() {
     const { register: registerUser, googleLogin, isRegistering } = useAuth();
 
     const {
@@ -83,8 +79,8 @@ const signupSchema = z.object({
 
             <Card variant="elevated" className="glass animate-slide-up border-white/40">
             <CardHeader>
-                <CardTitle>Sign Up</CardTitle>
-                <CardDescription>Create your account to get started</CardDescription>
+                <CardTitle className="text-2xl">Sign Up</CardTitle>
+                <CardDescription className="text-base">Create your account to get started</CardDescription>
             </CardHeader>
 
             <CardContent>
@@ -129,15 +125,16 @@ const signupSchema = z.object({
                     {...register('password')}
                 />
 
-                {/* Confirm Password Input */}
-                <Input
-                    label="Confirm Password"
-                    type="password"
-                    placeholder="Re-enter your password"
-                    leftIcon={<Lock className="w-5 h-5" />}
-                    error={errors.confirmPassword?.message}
-                    {...register('confirmPassword')}
-                />
+                {/* Password Requirements */}
+                <div className="text-xs text-gray-500 space-y-1 pl-1">
+                    <p>Password must contain:</p>
+                    <ul className="list-disc list-inside space-y-0.5 pl-2">
+                    <li>At least 8 characters</li>
+                    <li>One uppercase letter</li>
+                    <li>One lowercase letter</li>
+                    <li>One number</li>
+                    </ul>
+                </div>
 
                 {/* Sign Up Button */}
                 <Button

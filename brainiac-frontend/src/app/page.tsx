@@ -71,7 +71,7 @@ export default function HomePage() {
                 <Button variant="ghost">Login</Button>
               </Link>
               <Link href="/auth/register">
-                <Button variant="primary">Register</Button>
+                <Button variant="primary">Sign Up</Button>
               </Link>
             </div>
           </div>
@@ -114,7 +114,7 @@ export default function HomePage() {
                 Start Quiz Now
               </Button>
             </Link>
-            <Link href="/auth/register">
+            <Link href="/auth/signup">
               <Button 
                 size="xl" 
                 variant="outline"
