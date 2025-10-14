@@ -4,19 +4,26 @@ import type { NextRequest } from 'next/server';
 /**
  * Middleware to protect routes
  * Redirects unauthenticated users trying to access protected routes
+ * Allows guest access to quiz browsing and taking
  */
 export function middleware(request: NextRequest) {
     const accessToken = request.cookies.get('accessToken');
     const { pathname } = request.nextUrl;
 
-    // Protected routes that require authentication
+    // Protected routes that REQUIRE authentication
     const protectedRoutes = ['/dashboard', '/quiz-session'];
     const isProtectedRoute = protectedRoutes.some((route) =>
         pathname.startsWith(route)
     );
 
+    // Routes that guests can access (quiz browsing/taking)
+    const guestAllowedRoutes = ['/quiz/browse', '/quiz/take'];
+    const isGuestRoute = guestAllowedRoutes.some((route) =>
+        pathname.startsWith(route)
+    );
+
     // Auth routes that authenticated users shouldn't access
-    const authRoutes = ['/auth/login', '/auth/signup'];
+    const authRoutes = ['/auth/login', '/auth/register'];
     const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
 
     // Redirect authenticated users away from auth pages
@@ -24,10 +31,16 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard/home', request.url));
     }
 
+    // Allow guest access to quiz routes
+    if (isGuestRoute) {
+        return NextResponse.next();
+    }
+
     // Redirect unauthenticated users away from protected pages
     if (isProtectedRoute && !accessToken) {
         const loginUrl = new URL('/auth/login', request.url);
         loginUrl.searchParams.set('redirect', pathname);
+        loginUrl.searchParams.set('message', 'Please login to access this feature');
         return NextResponse.redirect(loginUrl);
     }
 
