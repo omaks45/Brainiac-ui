@@ -41,18 +41,20 @@ export default function ForgotPasswordPage() {
     const onSubmit = async (data: ForgotPasswordFormData) => {
         setIsLoading(true);
         try {
-            await authApi.forgotPassword(data);
-            setIsSuccess(true);
-            toast.success('Password reset email sent!');
+        console.log('Requesting password reset for:', data.email);
+        await authApi.forgotPassword(data);
+        setIsSuccess(true);
+        toast.success('Password reset email sent!');
         } catch (error) {
-            const errorMessage = 
-            error instanceof Error 
-                ? error.message 
+            const errorMessage =
+            error instanceof Error
+                ? error.message
                 : 'Failed to send reset email';
             toast.error(errorMessage);
         } finally {
             setIsLoading(false);
         }
+
     };
 
     return (

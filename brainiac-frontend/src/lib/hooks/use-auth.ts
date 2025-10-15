@@ -92,32 +92,11 @@ export const useAuth = () => {
 
     /**
      * Google OAuth login
-     * Redirects to backend Google OAuth endpoint
+     * Directly redirects to backend OAuth endpoint
      */
-    const googleLogin = async () => {
-        try {
+    const googleLogin = () => {
         console.log('Initiating Google OAuth...');
-        
-        // Get the Google OAuth URL from your backend
-        const { url } = await authApi.googleLogin();
-        
-        console.log('Google OAuth URL:', url);
-        
-        // Redirect to Google OAuth URL (provided by backend)
-        if (url) {
-            window.location.href = url;
-        } else {
-            throw new Error('No OAuth URL returned from backend');
-        }
-        } catch (error: unknown) {
-        let errorMessage = 'Google login failed';
-        if (error && typeof error === 'object' && 'response' in error) {
-            const err = error as { response?: { data?: { message?: string } } };
-            errorMessage = err.response?.data?.message || errorMessage;
-        }
-        toast.error(errorMessage);
-        }
-
+        authApi.googleLogin();
     };
 
     /**

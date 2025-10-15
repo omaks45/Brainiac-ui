@@ -9,9 +9,10 @@ import { useAuthStore } from '@/lib/store/auth-store';
 import apiClient from '@/lib/api/client';
 
 /**
- * Google OAuth Callback Handler Component
+ * Auth Callback Handler Component (for /auth/callback route)
+ * This handles the backend redirect to /auth/callback with tokens
  */
-function GoogleCallbackContent() {
+function AuthCallbackContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { setAuth } = useAuthStore();
@@ -19,21 +20,21 @@ function GoogleCallbackContent() {
     useEffect(() => {
         const handleCallback = async () => {
         try {
-            // Get tokens from URL params (your backend sends them directly)
+            // Get tokens from URL params
             const token = searchParams.get('token');
             const refreshToken = searchParams.get('refreshToken');
             const error = searchParams.get('error');
 
-            console.log('Google OAuth Callback received');
+            console.log('Auth Callback received at /auth/callback');
             console.log('Token:', token ? 'Present' : 'Missing');
             console.log('RefreshToken:', refreshToken ? 'Present' : 'Missing');
 
             if (error) {
-            throw new Error(error || 'Google authentication failed');
+            throw new Error(error || 'Authentication failed');
             }
 
             if (!token || !refreshToken) {
-            throw new Error('No tokens received from Google authentication');
+            throw new Error('No tokens received from authentication');
             }
 
             // Fetch user data using the token
@@ -90,7 +91,7 @@ function GoogleCallbackContent() {
             </div>
             <Loader2 className="w-10 h-10 animate-spin text-primary-600 mx-auto mb-4" />
             <h2 className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent mb-2">
-            Completing Google Sign In...
+            Completing Sign In...
             </h2>
             <p className="text-gray-600 text-lg">Please wait while we set up your account</p>
         </div>
@@ -99,10 +100,9 @@ function GoogleCallbackContent() {
 }
 
 /**
- * Google OAuth Callback Page with Suspense
- * Required for useSearchParams hook
+ * Auth Callback Page with Suspense
  */
-export default function GoogleCallbackPage() {
+export default function AuthCallbackPage() {
     return (
         <Suspense
         fallback={
@@ -111,7 +111,7 @@ export default function GoogleCallbackPage() {
             </div>
         }
         >
-        <GoogleCallbackContent />
+        <AuthCallbackContent />
         </Suspense>
     );
 }

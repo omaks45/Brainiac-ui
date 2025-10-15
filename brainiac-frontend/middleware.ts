@@ -16,14 +16,22 @@ export function middleware(request: NextRequest) {
         pathname.startsWith(route)
     );
 
-    // Routes that guests can access (quiz browsing/taking)
-    const guestAllowedRoutes = ['/quiz/browse', '/quiz/take'];
+    // Routes that guests can access (quiz browsing/taking, email verification, password reset)
+    const guestAllowedRoutes = [
+        '/quiz/browse', 
+        '/quiz/take', 
+        '/auth/verify-email', 
+        '/auth/reset-password',
+        '/auth/forgot-password',
+        '/auth/callback',
+        '/auth/google/callback'
+    ];
     const isGuestRoute = guestAllowedRoutes.some((route) =>
         pathname.startsWith(route)
     );
 
     // Auth routes that authenticated users shouldn't access
-    const authRoutes = ['/auth/login', '/auth/register'];
+    const authRoutes = ['/auth/login', '/auth/signup'];
     const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
 
     // Redirect authenticated users away from auth pages
@@ -31,7 +39,7 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard/home', request.url));
     }
 
-    // Allow guest access to quiz routes
+    // Allow guest access to quiz routes and verification pages
     if (isGuestRoute) {
         return NextResponse.next();
     }
@@ -45,12 +53,12 @@ export function middleware(request: NextRequest) {
     }
 
     return NextResponse.next();
-}
+    }
 
-/**
- * Configure which routes to run middleware on
- */
-export const config = {
+    /**
+     * Configure which routes to run middleware on
+     */
+    export const config = {
     matcher: [
         /*
         * Match all request paths except:

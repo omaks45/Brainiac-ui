@@ -70,7 +70,7 @@ export default function HomePage() {
               <Link href="/auth/login">
                 <Button variant="ghost">Login</Button>
               </Link>
-              <Link href="/auth/register">
+              <Link href="/auth/signup">
                 <Button variant="primary">Sign Up</Button>
               </Link>
             </div>

@@ -39,12 +39,12 @@ export const authApi = {
     login: async (data: LoginRequest): Promise<AuthResponse> => {
         console.log('Calling API: POST /auth/login');
         console.log('Request data:', { email: data.email, password: '[HIDDEN]' });
-
+        
         const response = await apiClient.post<AuthResponse>('/auth/login', data);
 
         console.log('Login response:', {
-        user: response.data.user,
-        hasTokens: !!(response.data.accessToken && response.data.refreshToken)
+            user: response.data.user,
+            hasTokens: !!(response.data.accessToken && response.data.refreshToken)
         });
         
         return response.data;
@@ -52,14 +52,14 @@ export const authApi = {
 
     /**
      * Initiate Google OAuth login
-     * GET /api/auth/google
-     * Returns the Google OAuth URL to redirect to
+     * Redirects directly to backend Google OAuth endpoint
      */
-    googleLogin: async (): Promise<{ url: string }> => {
-        console.log('Calling API: GET /auth/google');
-        const response = await apiClient.get<{ url: string }>('/auth/google');
-        console.log('Google OAuth URL received:', response.data.url);
-        return response.data;
+    googleLogin: () => {
+        console.log('Redirecting to Google OAuth...');
+        const baseURL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
+        const googleAuthUrl = `${baseURL}/api/auth/google`;
+        console.log('Google OAuth URL:', googleAuthUrl);
+        window.location.href = googleAuthUrl;
     },
 
     /**
