@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 /**
  * Base API URL from environment variables
  */
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 console.log('API Base URL:', BASE_URL); // Debug log
 
