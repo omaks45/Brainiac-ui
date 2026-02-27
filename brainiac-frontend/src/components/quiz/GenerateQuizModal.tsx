@@ -129,7 +129,7 @@ export default function GenerateQuizModal({ isOpen, onClose }: GenerateQuizModal
             <div className="px-6 pb-6">
             <StepDots step={step} />
 
-            {/* ── Step 0: Category ── */}
+            {/*  Step 0: Category  */}
             {step === 0 && (
                 <div>
                 <p className="text-sm font-semibold text-gray-800 mb-1">Choose a category</p>
