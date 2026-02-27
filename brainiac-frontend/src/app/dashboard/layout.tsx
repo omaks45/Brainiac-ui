@@ -14,10 +14,10 @@ import { cn } from '@/lib/utils/cn';
  * Navigation items for the dashboard
  */
 const navItems = [
-  { href: '/dashboard/home', icon: Home, label: 'Home' },
-  { href: '/dashboard/quizzes', icon: BookOpen, label: 'Quizzes' },
-  { href: '/dashboard/leaderboard', icon: Trophy, label: 'Leaderboard' },
-  { href: '/dashboard/profile', icon: User, label: 'Profile' },
+    { href: '/dashboard/home', icon: Home, label: 'Home' },
+    { href: '/dashboard/quizzes', icon: BookOpen, label: 'Quizzes' },
+    { href: '/dashboard/leaderboard', icon: Trophy, label: 'Leaderboard' },
+    { href: '/dashboard/profile', icon: User, label: 'Profile' },
 ];
 
 /**
