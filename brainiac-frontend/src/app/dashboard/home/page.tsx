@@ -1,21 +1,43 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { Brain, Zap, Users, TrendingUp, Plus, Clock } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useRouter } from 'next/navigation';
+import { Brain, Zap, Users, TrendingUp, Plus, Sparkles } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '@/lib/store/auth-store';
+import { useMyAttempts } from '@/lib/hooks/use-quiz';
+import GenerateQuizModal from '@/components/quiz/GenerateQuizModal';
+import RecentActivity from '@/components/quiz/RecentActivity';
+import { CATEGORY_META, QuizAttempt } from '@/lib/types/quiz.types';
+import { cn } from '@/lib/utils/cn';
+//import { QuizAttempt } from '@/lib/types/quiz.types';
 
-/**
- * Quick Stats Component
- */
-const QuickStats = () => {
+
+// Quick Stats
+
+interface QuickStatsProps {
+    quizzesTaken: number;
+    totalScore: number;
+    challengesWon: number;
+    currentRank: string | number;
+}
+
+interface UserWithStats {
+    displayName?: string;
+    stats?: {
+        rank?: string | number;
+    };
+}
+
+
+function QuickStats({ quizzesTaken, totalScore, challengesWon, currentRank }: QuickStatsProps) {
     const stats = [
-        { label: 'Quizzes Taken', value: '0', icon: Brain, color: 'text-primary-600', bg: 'bg-primary-50' },
-        { label: 'Total Score', value: '0', icon: TrendingUp, color: 'text-success-600', bg: 'bg-success-50' },
-        { label: 'Challenges Won', value: '0', icon: Zap, color: 'text-accent-600', bg: 'bg-accent-50' },
-        { label: 'Current Rank', value: '-', icon: Users, color: 'text-secondary-600', bg: 'bg-secondary-50' },
+        { label: 'Quizzes Taken',  value: quizzesTaken,   icon: Brain,      color: 'text-primary-600',   bg: 'bg-primary-50'   },
+        { label: 'Total Score',    value: totalScore,     icon: TrendingUp, color: 'text-emerald-600',   bg: 'bg-emerald-50'   },
+        { label: 'Challenges Won', value: challengesWon,  icon: Zap,        color: 'text-amber-600',     bg: 'bg-amber-50'     },
+        { label: 'Current Rank',   value: currentRank,    icon: Users,      color: 'text-secondary-600', bg: 'bg-secondary-50' },
     ];
 
     return (
@@ -45,30 +67,20 @@ const QuickStats = () => {
         })}
         </div>
     );
-};
+}
 
-/**
- * Quiz Categories Component
- */
-const QuizCategories = () => {
-    const categories = [
-        { name: 'Data Science', color: 'from-blue-500 to-cyan-500', count: 0 },
-        { name: 'Mathematics', color: 'from-amber-500 to-orange-500', count: 0 },
-        { name: 'Product Design', color: 'from-green-500 to-emerald-500', count: 0 },
-        { name: 'Software Engineering', color: 'from-purple-500 to-pink-500', count: 0 },
-        { name: 'Arts and Humanities', color: 'from-red-500 to-rose-500', count: 0 },
-        { name: 'Economics', color: 'from-indigo-500 to-blue-500', count: 0 },
-        { name: 'Social Science', color: 'from-teal-500 to-cyan-500', count: 0 },
-        { name: 'Data Analytics', color: 'from-violet-500 to-purple-500', count: 0 },
-    ];
+// Category Grid 
+
+function QuizCategories() {
+    const router = useRouter();
 
     return (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {categories.map((category, index) => (
-            <Link
-            key={category.name}
-            href={`/dashboard/quizzes?category=${category.name.toLowerCase()}`}
-            className="group"
+        {CATEGORY_META.map((cat, index) => (
+            <button
+            key={cat.id}
+            onClick={() => router.push(`/dashboard/quizzes?category=${cat.id}`)}
+            className="group text-left w-full"
             >
             <Card
                 variant="bordered"
@@ -76,101 +88,145 @@ const QuizCategories = () => {
                 style={{ animationDelay: `${index * 50}ms` }}
             >
                 <CardContent className="p-6 text-center">
-                <div className={cn(
+                <div
+                    className={cn(
                     'w-16 h-16 mx-auto mb-3 rounded-xl flex items-center justify-center',
                     'bg-gradient-to-br shadow-lg',
                     'group-hover:scale-110 transition-transform duration-300',
-                    category.color
-                )}>
+                    cat.gradient
+                    )}
+                >
                     <Brain className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-1">{category.name}</h3>
-                <p className="text-xs text-gray-500">{category.count} quizzes</p>
+                <h3 className="font-semibold text-gray-900 mb-1 text-sm leading-tight">
+                    {cat.label}
+                </h3>
+                <p className="text-xs text-gray-500">0 quizzes</p>
                 </CardContent>
             </Card>
-            </Link>
+            </button>
         ))}
         </div>
     );
-};
+}
 
-/**
- * Recent Activity Component (Placeholder)
- */
-const RecentActivity = () => {
+// Quick Generate Panel 
+
+function QuickGeneratePanel({ onGenerate }: { onGenerate: () => void }) {
     return (
-        <Card variant="elevated">
+        <Card variant="elevated" className="h-full">
         <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-            <Clock className="w-5 h-5 text-primary-600" />
-            <span>Recent Activity</span>
+            <CardTitle className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary-600" />
+            Quick Generate
             </CardTitle>
-            <CardDescription>Your latest quiz attempts and achievements</CardDescription>
+            <CardDescription>Create a quiz in seconds with AI</CardDescription>
         </CardHeader>
-        <CardContent>
-            <div className="text-center py-12">
-            <Brain className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 mb-4">No activity yet</p>
-            <p className="text-sm text-gray-400">
-                Start taking quizzes to see your activity here
-            </p>
+        <CardContent className="pt-0">
+            <div className="flex flex-wrap gap-1.5 mb-5">
+            {['Easy', 'Medium', 'Hard'].map(d => (
+                <span
+                key={d}
+                className="px-2.5 py-1 rounded-full bg-gray-100 text-xs font-semibold text-gray-600"
+                >
+                {d}
+                </span>
+            ))}
             </div>
+            <Button
+            fullWidth
+            onClick={onGenerate}
+            leftIcon={<Sparkles className="w-4 h-4" />}
+            className="shadow-md hover:shadow-glow"
+            >
+            Generate Now
+            </Button>
         </CardContent>
         </Card>
     );
-};
+}
 
-/**
- * Dashboard Home Page Component
- */
+//  Main Home Page 
+
 export default function DashboardHomePage() {
+    const [showModal, setShowModal] = useState(false);
     const user = useCurrentUser();
+
+    // Live stats derived from real attempt history
+    const { data: attemptsData } = useMyAttempts(20);
+    const attempts   = (attemptsData?.attempts ?? []) as QuizAttempt[];
+    const totalScore = attempts.reduce((s: number, a: QuizAttempt) => s + (a.score ?? 0), 0);
+    const challengesWon = 0; // Phase 3 — wire to challenges API
+    const currentRank = (user as UserWithStats)?.stats?.rank ?? '-';
 
     return (
         <div className="max-w-7xl mx-auto">
-        {/* Welcome Header */}
+
+        {/* ── Welcome Header ── */}
         <div className="mb-8 animate-fade-in">
             <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
-            Welcome back, {user?.displayName?.split(' ')[0] || 'there'}!
+            Welcome back, {user?.displayName?.split(' ')[0] ?? 'there'}!
             </h1>
             <p className="text-gray-600">
             Ready to challenge your mind? Let&#39;s get started with a quiz.
             </p>
         </div>
 
-        {/* Quick Action Buttons */}
+        {/* ── CTA Buttons ── */}
         <div className="flex flex-col sm:flex-row gap-4 mb-8 animate-slide-up">
             <Button
             size="lg"
             leftIcon={<Plus className="w-5 h-5" />}
             className="shadow-lg hover:shadow-glow"
+            onClick={() => setShowModal(true)}
             >
             Create AI Quiz
             </Button>
+            <Link href="/dashboard/challenges">
             <Button
-            variant="outline"
-            size="lg"
-            leftIcon={<Users className="w-5 h-5" />}
+                variant="outline"
+                size="lg"
+                leftIcon={<Users className="w-5 h-5" />}
             >
-            Challenge Friends
+                Challenge Friends
             </Button>
+            </Link>
         </div>
 
-        {/* Quick Stats */}
-        <QuickStats />
+        {/* ── Quick Stats — live data from attempts ── */}
+        <QuickStats
+            quizzesTaken={attempts.length}
+            totalScore={totalScore}
+            challengesWon={challengesWon}
+            currentRank={currentRank}
+        />
 
-        {/* Quiz Categories */}
+        {/* ── Recent Activity + Quick Generate ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="lg:col-span-2">
+            <RecentActivity />
+            </div>
+            <div>
+            <QuickGeneratePanel onGenerate={() => setShowModal(true)} />
+            </div>
+        </div>
+
+        {/* ── Browse by Category ── */}
         <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Browse by Category</h2>
+            <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-gray-900">Browse by Category</h2>
+            <Link
+                href="/dashboard/quizzes"
+                className="text-sm font-semibold text-primary-600 hover:text-primary-700 transition-colors"
+            >
+                See all →
+            </Link>
+            </div>
             <QuizCategories />
         </div>
 
-        {/* Recent Activity */}
-        <RecentActivity />
+        {/* ── Generate Quiz Modal ── */}
+        <GenerateQuizModal isOpen={showModal} onClose={() => setShowModal(false)} />
         </div>
     );
-}
-
-function cn(...classes: string[]) {
-    return classes.filter(Boolean).join(' ');
 }
