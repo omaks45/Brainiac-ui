@@ -4,102 +4,95 @@ import {
     GenerateQuizResponse,
     Quiz,
     QuizAttempt,
+    QuizStats,
     SubmitQuizRequest,
     QuizCategory,
     Difficulty,
 } from '../types/quiz.types';
 
+// Response normalisers
+type QuizListRaw =
+    | Quiz[]
+    | { quizzes: Quiz[]; total: number; page: number }
+    | { data: Quiz[]; meta?: { totalItems?: number; currentPage?: number } };
+
+function normaliseQuizList(raw: QuizListRaw): { quizzes: Quiz[]; total: number; page: number } {
+    if (Array.isArray(raw)) return { quizzes: raw, total: raw.length, page: 1 };
+    if ('quizzes' in raw)   return raw as { quizzes: Quiz[]; total: number; page: number };
+    if ('data' in raw)      return { quizzes: raw.data, total: raw.meta?.totalItems ?? raw.data.length, page: raw.meta?.currentPage ?? 1 };
+    return { quizzes: [], total: 0, page: 1 };
+}
+
+// Attempts: backend getUserAttempts returns { data: attempts[], meta: {...} }
+type AttemptListRaw =
+    | QuizAttempt[]
+    | { attempts: QuizAttempt[]; total: number }
+    | { data: QuizAttempt[]; meta?: { totalItems?: number } };
+
+function normaliseAttemptList(raw: AttemptListRaw): { attempts: QuizAttempt[]; total: number } {
+    if (Array.isArray(raw))   return { attempts: raw, total: raw.length };
+    if ('attempts' in raw)    return raw as { attempts: QuizAttempt[]; total: number };
+    if ('data' in raw)        return { attempts: raw.data, total: raw.meta?.totalItems ?? raw.data.length };
+    return { attempts: [], total: 0 };
+}
+
+// Quiz API
+
 export const quizApi = {
-    /**
-     * 
-     * @param data 
-     * @returns 
-     */
-    // POST /api/quizzes/generate
+    /** POST /api/quizzes/generate */
     generate: async (data: GenerateQuizRequest): Promise<GenerateQuizResponse> => {
-        console.log('Generating quiz:', data);
         const response = await apiClient.post<GenerateQuizResponse>('/quizzes/generate', data);
-        console.log('Quiz generated:', response.data._id);
         return response.data;
     },
 
-    /**
-     * 
-     * @param params 
-     * @returns 
-     */
-    // GET /api/quizzes
+    /** GET /api/quizzes */
     getAll: async (params?: {
         category?: QuizCategory;
         difficulty?: Difficulty;
         page?: number;
         limit?: number;
     }): Promise<{ quizzes: Quiz[]; total: number; page: number }> => {
-        const response = await apiClient.get('/quizzes', { params });
-        return response.data;
+        const response = await apiClient.get<QuizListRaw>('/quizzes', { params });
+        return normaliseQuizList(response.data);
     },
 
-    /**
-     * 
-     * @param id 
-     * @returns 
-     */
-    // GET /api/quizzes/:id
+    /** GET /api/quizzes/:id */
     getById: async (id: string): Promise<Quiz> => {
         const response = await apiClient.get<Quiz>(`/quizzes/${id}`);
         return response.data;
     },
 
-    /**
-     * 
-     * @param category 
-     * @returns 
-     */
-    // GET /api/quizzes?category=mathematics
-    getByCategory: async (category: QuizCategory): Promise<Quiz[]> => {
-        const response = await apiClient.get<Quiz[]>('/quizzes', {
-            params: { category },
-        });
-        return response.data;
-    },
-
-    /**
-     * 
-     * @param data 
-     * @returns 
-     */
-    // POST /api/quiz-attempts/submit
+    /** POST /api/quiz-attempts/submit */
     submitAttempt: async (data: SubmitQuizRequest): Promise<QuizAttempt> => {
-        console.log('Submitting quiz attempt for quiz:', data.quizId);
         const response = await apiClient.post<QuizAttempt>('/quiz-attempts/submit', data);
-        console.log('Attempt saved:', response.data._id);
         return response.data;
     },
 
-    // GET /api/quiz-attempts?userId=123
+    /**
+     * GET /api/quiz-attempts
+     * Backend returns { data: QuizAttempt[], meta: { currentPage, itemsPerPage, totalItems, totalPages } }
+     */
     getMyAttempts: async (params?: {
         page?: number;
         limit?: number;
     }): Promise<{ attempts: QuizAttempt[]; total: number }> => {
-        const response = await apiClient.get('/quiz-attempts', { params });
+        const response = await apiClient.get<AttemptListRaw>('/quiz-attempts', { params });
+        return normaliseAttemptList(response.data);
+    },
+
+    /**
+     * GET /api/quiz-attempts/stats
+     * Returns: { totalAttempts, averageScore, averagePercentage,
+     *            totalTimeSpent, bestScore, bestPercentage }
+     */
+    getMyStats: async (): Promise<QuizStats> => {
+        const response = await apiClient.get<QuizStats>('/quiz-attempts/stats');
         return response.data;
     },
 
-    // GET /api/quiz-attempts/:id
+    /** GET /api/quiz-attempts/:id */
     getAttemptById: async (id: string): Promise<QuizAttempt> => {
         const response = await apiClient.get<QuizAttempt>(`/quiz-attempts/${id}`);
-        return response.data;
-    },
-
-    // GET /api/quiz-attempts/stats — user quiz statistics
-    getMyStats: async () => {
-        const response = await apiClient.get('/quiz-attempts/stats');
-        return response.data;
-    },
-
-    // GET /api/quizzes/:id/stats
-    getQuizStats: async (id: string) => {
-        const response = await apiClient.get(`/quizzes/${id}/stats`);
         return response.data;
     },
 };

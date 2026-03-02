@@ -3,77 +3,64 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Brain, Zap, Users, TrendingUp, Plus, Sparkles } from 'lucide-react';
+import { Brain, Zap, Users, TrendingUp, Plus, Sparkles, Star } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '@/lib/store/auth-store';
-import { useMyAttempts } from '@/lib/hooks/use-quiz';
+import { useMyAttempts, useMyStats } from '@/lib/hooks/use-quiz';
 import GenerateQuizModal from '@/components/quiz/GenerateQuizModal';
 import RecentActivity from '@/components/quiz/RecentActivity';
-import { CATEGORY_META, QuizAttempt } from '@/lib/types/quiz.types';
+import { CATEGORY_META, QuizStats } from '@/lib/types/quiz.types';
 import { cn } from '@/lib/utils/cn';
-//import { QuizAttempt } from '@/lib/types/quiz.types';
 
+// Stat card 
 
-// Quick Stats
-
-interface QuickStatsProps {
-    quizzesTaken: number;
-    totalScore: number;
-    challengesWon: number;
-    currentRank: string | number;
+interface StatCardProps {
+    label: string;
+    value: number | string;
+    subLabel?: string;
+    icon: React.ElementType;
+    color: string;
+    bg: string;
+    isLoading: boolean;
+    index: number;
 }
 
-interface UserWithStats {
-    displayName?: string;
-    stats?: {
-        rank?: string | number;
-    };
-}
-
-
-function QuickStats({ quizzesTaken, totalScore, challengesWon, currentRank }: QuickStatsProps) {
-    const stats = [
-        { label: 'Quizzes Taken',  value: quizzesTaken,   icon: Brain,      color: 'text-primary-600',   bg: 'bg-primary-50'   },
-        { label: 'Total Score',    value: totalScore,     icon: TrendingUp, color: 'text-emerald-600',   bg: 'bg-emerald-50'   },
-        { label: 'Challenges Won', value: challengesWon,  icon: Zap,        color: 'text-amber-600',     bg: 'bg-amber-50'     },
-        { label: 'Current Rank',   value: currentRank,    icon: Users,      color: 'text-secondary-600', bg: 'bg-secondary-50' },
-    ];
-
+function StatCard({ label, value, subLabel, icon: Icon, color, bg, isLoading, index }: StatCardProps) {
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-            <Card
-                key={stat.label}
-                variant="elevated"
-                className="glass border-white/40 animate-slide-up hover:shadow-glow transition-all duration-300 hover:-translate-y-1"
-                style={{ animationDelay: `${index * 100}ms` }}
-            >
-                <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                    <p className="text-sm text-gray-600 mb-1 font-medium">{stat.label}</p>
-                    <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
-                    </div>
-                    <div className={cn('p-3 rounded-xl', stat.bg, stat.color)}>
-                    <Icon className="w-6 h-6" />
-                    </div>
-                </div>
-                </CardContent>
-            </Card>
-            );
-        })}
-        </div>
+        <Card
+        variant="elevated"
+        className="glass border-white/40 animate-slide-up hover:shadow-glow transition-all duration-300 hover:-translate-y-1"
+        style={{ animationDelay: `${index * 100}ms` }}
+        >
+        <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+            <div>
+                <p className="text-sm text-gray-600 mb-1 font-medium">{label}</p>
+                {isLoading ? (
+                <div className="h-8 w-14 bg-gray-200 rounded-lg animate-pulse mt-1" />
+                ) : (
+                <>
+                    <p className="text-3xl font-bold text-gray-900">{value}</p>
+                    {subLabel && (
+                    <p className="text-xs text-gray-400 mt-0.5">{subLabel}</p>
+                    )}
+                </>
+                )}
+            </div>
+            <div className={cn('p-3 rounded-xl', bg, color)}>
+                <Icon className="w-6 h-6" />
+            </div>
+            </div>
+        </CardContent>
+        </Card>
     );
 }
 
-// Category Grid 
+// Category Grid
 
 function QuizCategories() {
     const router = useRouter();
-
     return (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {CATEGORY_META.map((cat, index) => (
@@ -88,20 +75,15 @@ function QuizCategories() {
                 style={{ animationDelay: `${index * 50}ms` }}
             >
                 <CardContent className="p-6 text-center">
-                <div
-                    className={cn(
+                <div className={cn(
                     'w-16 h-16 mx-auto mb-3 rounded-xl flex items-center justify-center',
-                    'bg-gradient-to-br shadow-lg',
-                    'group-hover:scale-110 transition-transform duration-300',
-                    cat.gradient
-                    )}
-                >
+                    'bg-gradient-to-br shadow-lg group-hover:scale-110 transition-transform duration-300',
+                    cat.gradient,
+                )}>
                     <Brain className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-1 text-sm leading-tight">
-                    {cat.label}
-                </h3>
-                <p className="text-xs text-gray-500">0 quizzes</p>
+                <h3 className="font-semibold text-gray-900 mb-1 text-sm leading-tight">{cat.label}</h3>
+                <p className="text-xs text-gray-500">Tap to browse</p>
                 </CardContent>
             </Card>
             </button>
@@ -110,7 +92,7 @@ function QuizCategories() {
     );
 }
 
-// Quick Generate Panel 
+// Quick Generate Panel
 
 function QuickGeneratePanel({ onGenerate }: { onGenerate: () => void }) {
     return (
@@ -125,12 +107,7 @@ function QuickGeneratePanel({ onGenerate }: { onGenerate: () => void }) {
         <CardContent className="pt-0">
             <div className="flex flex-wrap gap-1.5 mb-5">
             {['Easy', 'Medium', 'Hard'].map(d => (
-                <span
-                key={d}
-                className="px-2.5 py-1 rounded-full bg-gray-100 text-xs font-semibold text-gray-600"
-                >
-                {d}
-                </span>
+                <span key={d} className="px-2.5 py-1 rounded-full bg-gray-100 text-xs font-semibold text-gray-600">{d}</span>
             ))}
             </div>
             <Button
@@ -146,18 +123,73 @@ function QuickGeneratePanel({ onGenerate }: { onGenerate: () => void }) {
     );
 }
 
-//  Main Home Page 
+//Main Home Page
 
 export default function DashboardHomePage() {
     const [showModal, setShowModal] = useState(false);
     const user = useCurrentUser();
 
-    // Live stats derived from real attempt history
-    const { data: attemptsData } = useMyAttempts(20);
-    const attempts   = (attemptsData?.attempts ?? []) as QuizAttempt[];
-    const totalScore = attempts.reduce((s: number, a: QuizAttempt) => s + (a.score ?? 0), 0);
-    const challengesWon = 0; // Phase 3 — wire to challenges API
-    const currentRank = (user as UserWithStats)?.stats?.rank ?? '-';
+    // GET /api/quiz-attempts/stats
+    // Returns: { totalAttempts, averageScore, averagePercentage,
+    //            totalTimeSpent, bestScore, bestPercentage }
+    const { data: stats, isLoading: statsLoading } = useMyStats();
+    const typedStats = stats as QuizStats | undefined;
+
+    // Fallback to attempt list count if stats not yet loaded
+    const { data: attemptsData } = useMyAttempts(5);
+    const fallbackCount = attemptsData?.attempts?.length ?? 0;
+
+    // ── Map backend fields to display cards ──────────────────────────────────
+    // totalAttempts  → "Quizzes Taken"
+    // averageScore   → "Avg Score"  (points per quiz on average)
+    // bestPercentage → "Best Score" (shown as % with subLabel)
+    // challengesWon  → "Challenges Won" (Phase 3 — shows 0 until then)
+    const quizzesTaken    = typedStats?.totalAttempts    ?? fallbackCount;
+    const averageScore    = typedStats?.averageScore     ?? 0;
+    const bestPercentage  = typedStats?.bestPercentage   ?? 0;
+    const challengesWon   = 0; // Phase 3 — challenges API not yet built
+
+    const statsCards: StatCardProps[] = [
+        {
+        label:     'Quizzes Taken',
+        value:     quizzesTaken,
+        icon:      Brain,
+        color:     'text-primary-600',
+        bg:        'bg-primary-50',
+        isLoading: statsLoading,
+        index:     0,
+        },
+        {
+        label:     'Avg Score',
+        value:     averageScore,
+        subLabel:  `Best: ${bestPercentage}%`,
+        icon:      TrendingUp,
+        color:     'text-emerald-600',
+        bg:        'bg-emerald-50',
+        isLoading: statsLoading,
+        index:     1,
+        },
+        {
+        label:     'Challenges Won',
+        value:     challengesWon,
+        subLabel:  'Phase 3 coming soon',
+        icon:      Zap,
+        color:     'text-amber-600',
+        bg:        'bg-amber-50',
+        isLoading: false, // always ready — hardcoded 0
+        index:     2,
+        },
+        {
+        label:     'Best Score',
+        value:     `${bestPercentage}%`,
+        subLabel:  bestPercentage >= 80 ? ' Excellent' : bestPercentage >= 60 ? ' Good' : quizzesTaken > 0 ? ' Keep going' : '—',
+        icon:      Star,
+        color:     'text-violet-600',
+        bg:        'bg-violet-50',
+        isLoading: statsLoading,
+        index:     3,
+        },
+    ];
 
     return (
         <div className="max-w-7xl mx-auto">
@@ -183,23 +215,18 @@ export default function DashboardHomePage() {
             Create AI Quiz
             </Button>
             <Link href="/dashboard/challenges">
-            <Button
-                variant="outline"
-                size="lg"
-                leftIcon={<Users className="w-5 h-5" />}
-            >
+            <Button variant="outline" size="lg" leftIcon={<Users className="w-5 h-5" />}>
                 Challenge Friends
             </Button>
             </Link>
         </div>
 
-        {/* ── Quick Stats — live data from attempts ── */}
-        <QuickStats
-            quizzesTaken={attempts.length}
-            totalScore={totalScore}
-            challengesWon={challengesWon}
-            currentRank={currentRank}
-        />
+        {/* ── Analytics Cards — sourced from GET /api/quiz-attempts/stats ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {statsCards.map((card) => (
+            <StatCard key={card.label} {...card} />
+            ))}
+        </div>
 
         {/* ── Recent Activity + Quick Generate ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -215,17 +242,13 @@ export default function DashboardHomePage() {
         <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900">Browse by Category</h2>
-            <Link
-                href="/dashboard/quizzes"
-                className="text-sm font-semibold text-primary-600 hover:text-primary-700 transition-colors"
-            >
+            <Link href="/dashboard/quizzes" className="text-sm font-semibold text-primary-600 hover:text-primary-700 transition-colors">
                 See all →
             </Link>
             </div>
             <QuizCategories />
         </div>
 
-        {/* ── Generate Quiz Modal ── */}
         <GenerateQuizModal isOpen={showModal} onClose={() => setShowModal(false)} />
         </div>
     );

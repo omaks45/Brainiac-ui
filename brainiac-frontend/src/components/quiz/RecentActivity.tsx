@@ -2,60 +2,80 @@
 
 import React from 'react';
 import Link from 'next/link';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { Clock, CheckCircle2, XCircle, Trophy, ChevronRight, BookOpen } from 'lucide-react';
+import { Clock, CheckCircle2, XCircle, ChevronRight, BookOpen } from 'lucide-react';
 import { useMyAttempts } from '@/lib/hooks/use-quiz';
-import { CATEGORY_META, DIFFICULTY_META } from '@/lib/types/quiz.types';
+import { QuizAttempt, CATEGORY_META, DIFFICULTY_META } from '@/lib/types/quiz.types';
 
-// Helpers 
+//Helpers 
 
 function timeAgo(dateStr: string): string {
-    const diff = Date.now() - new Date(dateStr).getTime();
+    const diff  = Date.now() - new Date(dateStr).getTime();
     const mins  = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days  = Math.floor(diff / 86400000);
-    if (mins < 1)  return 'Just now';
-    if (mins < 60) return `${mins}m ago`;
+    if (mins < 1)   return 'Just now';
+    if (mins < 60)  return `${mins}m ago`;
     if (hours < 24) return `${hours}h ago`;
     return `${days}d ago`;
 }
 
-interface AttemptWithQuiz {
-    quizId: string;
-    percentage: number;
-    score: number;
-    completedAt: string;
-    quiz?: {
-        title?: string;
-        category?: string;
-        difficulty?: string;
+/**
+ * Backend .populate('quizId', 'title category difficulty totalPoints')
+ * means attempt.quizId IS the quiz object in the response.
+ * We read quiz data from quizId directly.
+ */
+function resolveQuizData(attempt: QuizAttempt): {
+    id: string;
+    title: string;
+    category: string;
+    difficulty: string;
+    } {
+    if (typeof attempt.quizId === 'object') {
+        // quizId is PopulatedQuiz — access fields directly, no cast needed
+        const q = attempt.quizId;
+        return {
+        id:         q._id,
+        title:      q.title      ?? 'Quiz Attempt',
+        category:   q.category   ?? '',
+        difficulty: q.difficulty  ?? '',
+        };
+    }
+    // quizId is a plain string — fall back to attempt.quiz
+    return {
+        id:         attempt.quizId,
+        title:      attempt.quiz?.title      ?? 'Quiz Attempt',
+        category:   attempt.quiz?.category   ?? '',
+        difficulty: attempt.quiz?.difficulty ?? '',
     };
 }
 
-//  Single attempt row 
+//Single attempt row 
 
-function AttemptRow({ attempt }: { attempt: AttemptWithQuiz }) {
-    const quiz     = attempt.quiz;
-    const catMeta  = CATEGORY_META.find(c => c.id === quiz?.category);
-    const diffMeta = DIFFICULTY_META[quiz?.difficulty as keyof typeof DIFFICULTY_META];
+function AttemptRow({ attempt }: { attempt: QuizAttempt }) {
+    const quiz     = resolveQuizData(attempt);
+    const catMeta  = CATEGORY_META.find(c => c.id === quiz.category);
+    const diffMeta = DIFFICULTY_META[quiz.difficulty as keyof typeof DIFFICULTY_META];
     const passed   = attempt.percentage >= 60;
+
+    // Guard — if we can't resolve a valid ID, don't render a broken link
+    if (!quiz.id) return null;
 
     return (
         <Link
-        href={`/quiz-session/${attempt.quizId}`}
+        href={`/quiz-session/${quiz.id}`}
         className="group flex items-center gap-3.5 p-3.5 rounded-2xl hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
         >
-        {/* Category dot + icon */}
+        {/* Category icon */}
         <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${catMeta?.gradient ?? 'from-indigo-500 to-violet-600'} flex items-center justify-center shrink-0`}>
             <BookOpen size={14} className="text-white" />
         </div>
 
-        {/* Middle */}
+        {/* Title + meta */}
         <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-gray-800 truncate leading-tight">
-            {quiz?.title ?? 'Quiz Attempt'}
+            {quiz.title}
             </p>
-            <div className="flex items-center gap-2 mt-0.5">
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             {catMeta && (
                 <span className="text-[10px] text-gray-400">{catMeta.label}</span>
             )}
@@ -80,7 +100,7 @@ function AttemptRow({ attempt }: { attempt: AttemptWithQuiz }) {
             <div className="flex items-center gap-1">
             {passed
                 ? <CheckCircle2 size={11} className="text-emerald-500" />
-                : <XCircle size={11} className="text-red-400" />
+                : <XCircle     size={11} className="text-red-400" />
             }
             <span className="text-[10px] text-gray-400">{attempt.score} pts</span>
             </div>
@@ -91,7 +111,7 @@ function AttemptRow({ attempt }: { attempt: AttemptWithQuiz }) {
     );
 }
 
-//  Empty state
+// Empty state 
 
 function EmptyActivity() {
     return (
@@ -105,7 +125,7 @@ function EmptyActivity() {
     );
 }
 
-//  Skeleton 
+// Skeleton 
 
 function ActivitySkeleton() {
     return (
@@ -124,7 +144,7 @@ function ActivitySkeleton() {
     );
 }
 
-// Main component 
+// Main component
 
 export default function RecentActivity() {
     const { data, isLoading } = useMyAttempts(5);

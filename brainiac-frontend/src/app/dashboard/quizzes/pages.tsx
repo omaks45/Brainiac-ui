@@ -1,26 +1,24 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
-    Sparkles, BookOpen, Clock, BarChart2, Filter, Search,
-    ChevronRight, Loader2, AlertCircle,
+    Sparkles, BookOpen, Clock, BarChart2,
+    Search, ChevronRight, AlertCircle,
 } from 'lucide-react';
 import { useQuizzes } from '@/lib/hooks/use-quiz';
 import { useQuizSession } from '@/lib/store/quiz-store';
 import { Quiz, QuizCategory, Difficulty, CATEGORY_META, DIFFICULTY_META } from '@/lib/types/quiz.types';
 import GenerateQuizModal from '@/components/quiz/GenerateQuizModal';
 
-// Quiz card 
+//Quiz Card 
 
 function QuizCard({ quiz }: { quiz: Quiz }) {
     const router = useRouter();
     const { startQuiz } = useQuizSession();
 
     const catMeta  = CATEGORY_META.find(c => c.id === quiz.category);
-    const diffMeta = DIFFICULTY_META[quiz.difficulty];
+    const diffMeta = DIFFICULTY_META[quiz.difficulty] ?? DIFFICULTY_META.medium;
 
     const handleStart = () => {
         startQuiz(quiz);
@@ -29,11 +27,8 @@ function QuizCard({ quiz }: { quiz: Quiz }) {
 
     return (
         <div className="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden">
-        {/* Category gradient strip */}
         <div className={`h-1 bg-gradient-to-r ${catMeta?.gradient ?? 'from-indigo-500 to-violet-600'}`} />
-
         <div className="p-5">
-            {/* Top row */}
             <div className="flex items-start justify-between gap-2 mb-3">
             <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${catMeta?.gradient ?? 'from-indigo-500 to-violet-600'} flex items-center justify-center shrink-0`}>
                 <BookOpen size={14} className="text-white" />
@@ -44,26 +39,13 @@ function QuizCard({ quiz }: { quiz: Quiz }) {
             </span>
             </div>
 
-            {/* Title */}
-            <h3 className="text-sm font-bold text-gray-900 leading-snug mb-1 line-clamp-2">
-            {quiz.title}
-            </h3>
+            <h3 className="text-sm font-bold text-gray-900 leading-snug mb-1 line-clamp-2">{quiz.title}</h3>
             <p className="text-xs text-gray-400 mb-4">{catMeta?.label ?? quiz.category}</p>
 
-            {/* Meta row */}
             <div className="flex items-center gap-3 text-[11px] text-gray-400 mb-4">
-            <span className="flex items-center gap-1">
-                <BookOpen size={11} />
-                {quiz.questions.length} questions
-            </span>
-            <span className="flex items-center gap-1">
-                <Clock size={11} />
-                ~{quiz.estimatedDuration}m
-            </span>
-            <span className="flex items-center gap-1">
-                <BarChart2 size={11} />
-                {quiz.totalPoints} pts
-            </span>
+            <span className="flex items-center gap-1"><BookOpen size={11} />{quiz.questions?.length ?? 0} questions</span>
+            <span className="flex items-center gap-1"><Clock size={11} />~{quiz.estimatedDuration}m</span>
+            <span className="flex items-center gap-1"><BarChart2 size={11} />{quiz.totalPoints} pts</span>
             </div>
 
             <button
@@ -77,11 +59,11 @@ function QuizCard({ quiz }: { quiz: Quiz }) {
     );
 }
 
-//  Empty state 
+// Empty State
 
 function EmptyState({ onGenerate }: { onGenerate: () => void }) {
     return (
-        <div className="col-span-full flex flex-col items-center justify-center py-16 px-4 text-center">
+        <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
         <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center mb-4">
             <Sparkles size={22} className="text-indigo-400" />
         </div>
@@ -99,34 +81,43 @@ function EmptyState({ onGenerate }: { onGenerate: () => void }) {
     );
 }
 
-//  Main page 
+//Main Page
 
 export default function QuizzesPage() {
-    const [showModal, setShowModal]       = useState(false);
-    const [searchQuery, setSearchQuery]   = useState('');
-    const [categoryFilter, setCategoryFilter] = useState<QuizCategory | ''>('');
-    const [difficultyFilter, setDifficultyFilter] = useState<Difficulty | ''>('');
+    const searchParams = useSearchParams();
+
+    //Read category from URL — set when user clicks a category card on home page
+    const urlCategory = searchParams.get('category') as QuizCategory | null;
+
+    const [showModal, setShowModal]           = useState(false);
+    const [searchQuery, setSearchQuery]       = useState('');
+    const [categoryFilter, setCategoryFilter] = useState<QuizCategory | ''>(urlCategory ?? '');
+    const [diffFilter, setDiffFilter]         = useState<Difficulty | ''>('');
 
     const { data, isLoading, isError } = useQuizzes({
-        category: categoryFilter || undefined,
-        difficulty: difficultyFilter || undefined,
+        category:   categoryFilter || undefined,
+        difficulty: diffFilter     || undefined,
     });
 
+    //Handles both array and { quizzes: [] } response shapes (normalised in API layer)
     const quizzes: Quiz[] = data?.quizzes ?? [];
 
     const filtered = quizzes.filter(q =>
         q.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        q.category.toLowerCase().includes(searchQuery.toLowerCase())
+        (q.category ?? '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
         <div className="max-w-5xl mx-auto px-4 py-6">
+
         {/* Header */}
         <div className="flex items-center justify-between mb-6 gap-3">
             <div>
             <h1 className="text-2xl font-black text-gray-900 tracking-tight">Quizzes</h1>
             <p className="text-sm text-gray-400 mt-0.5">
-                {quizzes.length > 0 ? `${quizzes.length} quiz${quizzes.length !== 1 ? 'zes' : ''} available` : 'Browse and take quizzes'}
+                {quizzes.length > 0
+                ? `${quizzes.length} quiz${quizzes.length !== 1 ? 'zes' : ''} available`
+                : 'Generate an AI quiz to get started'}
             </p>
             </div>
             <button
@@ -139,7 +130,6 @@ export default function QuizzesPage() {
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-2.5 mb-6">
-            {/* Search */}
             <div className="relative flex-1">
             <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
@@ -150,11 +140,10 @@ export default function QuizzesPage() {
             />
             </div>
 
-            {/* Category filter */}
             <select
             value={categoryFilter}
             onChange={e => setCategoryFilter(e.target.value as QuizCategory | '')}
-            className="h-10 px-3 rounded-xl border-2 border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-indigo-400 transition-colors bg-white appearance-none cursor-pointer"
+            className="h-10 px-3 rounded-xl border-2 border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-indigo-400 bg-white"
             >
             <option value="">All Categories</option>
             {CATEGORY_META.map(c => (
@@ -162,11 +151,10 @@ export default function QuizzesPage() {
             ))}
             </select>
 
-            {/* Difficulty filter */}
             <select
-            value={difficultyFilter}
-            onChange={e => setDifficultyFilter(e.target.value as Difficulty | '')}
-            className="h-10 px-3 rounded-xl border-2 border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-indigo-400 transition-colors bg-white appearance-none cursor-pointer"
+            value={diffFilter}
+            onChange={e => setDiffFilter(e.target.value as Difficulty | '')}
+            className="h-10 px-3 rounded-xl border-2 border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-indigo-400 bg-white"
             >
             <option value="">All Difficulties</option>
             <option value="easy">Easy</option>
@@ -189,15 +177,13 @@ export default function QuizzesPage() {
             </div>
         ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.length === 0 ? (
-                <EmptyState onGenerate={() => setShowModal(true)} />
-            ) : (
-                filtered.map(quiz => <QuizCard key={quiz._id} quiz={quiz} />)
-            )}
+            {filtered.length === 0
+                ? <EmptyState onGenerate={() => setShowModal(true)} />
+                : filtered.map(quiz => <QuizCard key={quiz._id} quiz={quiz} />)
+            }
             </div>
         )}
 
-        {/* Generate Modal */}
         <GenerateQuizModal isOpen={showModal} onClose={() => setShowModal(false)} />
         </div>
     );
